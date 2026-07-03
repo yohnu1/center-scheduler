@@ -1,0 +1,1183 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>中心排班自動化工具</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1f2933;
+      --muted: #667085;
+      --line: #d8dee6;
+      --soft: #f4f7fb;
+      --panel: #ffffff;
+      --accent: #176b87;
+      --accent-dark: #20313b;
+      --ok: #257a55;
+      --warn: #b54708;
+      --danger: #b42318;
+      --shadow: 0 14px 30px rgba(31, 41, 51, .08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif;
+      color: var(--ink);
+      background: #eef3f8;
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 292px minmax(0, 1fr);
+    }
+
+    aside {
+      background: var(--accent-dark);
+      color: #f8fafc;
+      padding: 22px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .brand h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .brand p, .side-list {
+      margin: 0;
+      color: #cbd5e1;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .role-nav {
+      display: grid;
+      gap: 8px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,.16);
+    }
+
+    .role-btn {
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      color: #f8fafc;
+      border-radius: 8px;
+      min-height: 44px;
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    .role-btn.active {
+      background: #ffffff;
+      color: var(--accent-dark);
+      border-color: #ffffff;
+      font-weight: 700;
+    }
+
+    .side-block {
+      border-top: 1px solid rgba(255,255,255,.16);
+      padding-top: 16px;
+    }
+
+    .side-block h2 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: #d8eef8;
+    }
+
+    .side-list {
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 9px;
+    }
+
+    main {
+      padding: 24px;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .title h2 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .title p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      line-height: 1.5;
+      max-width: 760px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      min-height: 38px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: inline-flex;
+      gap: 7px;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .btn.warning {
+      border-color: #f3b96d;
+      background: #fff7ed;
+      color: #9a3412;
+    }
+
+    .btn.icon {
+      width: 36px;
+      padding: 0;
+      font-size: 17px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-head {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .panel-head h3 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .panel-body { padding: 18px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .85fr) minmax(460px, 1.15fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: #344054;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    input, select {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 8px;
+      min-height: 38px;
+      padding: 8px 10px;
+      color: var(--ink);
+      width: 100%;
+    }
+
+    .wide { grid-column: 1 / -1; }
+
+    .slot-picker {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .slot-option {
+      min-height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: #fbfdff;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .slot-option input {
+      width: 16px;
+      min-height: 16px;
+      accent-color: var(--accent);
+    }
+
+    .student-list {
+      display: grid;
+      gap: 9px;
+      max-height: 430px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .student-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px;
+      background: #fbfdff;
+    }
+
+    .student-name {
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+      flex-wrap: wrap;
+      font-weight: 700;
+    }
+
+    .badge {
+      border-radius: 999px;
+      background: #e7f3f6;
+      color: #15566c;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge.published {
+      background: #ecfdf3;
+      color: #05603a;
+    }
+
+    .chips {
+      margin-top: 7px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      border: 1px solid #d2d9e2;
+      border-radius: 999px;
+      padding: 3px 7px;
+      color: #475467;
+      font-size: 12px;
+      background: white;
+    }
+
+    .requirements {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .req-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 78px;
+      align-items: end;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfdff;
+    }
+
+    .req-name {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .req-time {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .tabs {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: white;
+    }
+
+    .tab {
+      border: 0;
+      border-right: 1px solid var(--line);
+      padding: 8px 12px;
+      min-height: 36px;
+      background: white;
+      color: #475467;
+    }
+
+    .tab:last-child { border-right: 0; }
+    .tab.active { background: var(--accent-dark); color: white; }
+
+    .schedule-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      padding: 10px;
+      line-height: 1.45;
+    }
+
+    th:last-child, td:last-child { border-right: 0; }
+
+    th {
+      background: #f6f8fb;
+      color: #344054;
+      font-size: 13px;
+      position: sticky;
+      top: 0;
+    }
+
+    td {
+      background: white;
+      min-height: 70px;
+      font-size: 14px;
+    }
+
+    .slot-title {
+      font-weight: 700;
+      color: #26343d;
+      white-space: nowrap;
+    }
+
+    .names {
+      margin-top: 6px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .person {
+      display: inline-flex;
+      width: fit-content;
+      max-width: 100%;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: #ecfdf3;
+      color: #116149;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .empty {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .status {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px;
+      background: #fbfdff;
+      min-height: 72px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .alerts {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .alert {
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      border: 1px solid #fedf89;
+      background: #fffaeb;
+      color: #93370d;
+    }
+
+    .alert.ok {
+      border-color: #abefc6;
+      background: #ecfdf3;
+      color: #05603a;
+    }
+
+    .view { display: grid; gap: 18px; }
+    .hidden { display: none !important; }
+
+    .login-card {
+      max-width: 460px;
+    }
+
+    @media (max-width: 1040px) {
+      .app { grid-template-columns: 1fr; }
+      aside { padding-bottom: 14px; }
+      .role-nav { grid-template-columns: 1fr 1fr; }
+      main { padding: 16px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 680px) {
+      .title h2 { font-size: 23px; }
+      .form-grid, .slot-picker, .requirements, .status, .role-nav {
+        grid-template-columns: 1fr;
+      }
+      .actions { justify-content: flex-start; }
+      .btn { white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <h1>中心排班自動化工具</h1>
+        <p>分成工讀生意願登記與中心管理作業，讓資料收集和固定班表媒合各自清楚。</p>
+      </div>
+
+      <nav class="role-nav" aria-label="角色切換">
+        <button class="role-btn active" id="studentRoleBtn" type="button">工讀生頁面</button>
+        <button class="role-btn" id="adminRoleBtn" type="button">中心管理頁面</button>
+      </nav>
+
+      <section class="side-block">
+        <h2>時段</h2>
+        <ul class="side-list">
+          <li>平日上午班：10:00 - 13:00</li>
+          <li>平日下午班：13:00 - 17:00</li>
+          <li>週六輪值班：13:00 - 17:00</li>
+        </ul>
+      </section>
+
+      <section class="side-block">
+        <h2>流程</h2>
+        <ul class="side-list">
+          <li>工讀生先填可排時段。</li>
+          <li>管理端設定每班目標人數。</li>
+          <li>一鍵媒合固定班表。</li>
+          <li>確認後公布，工讀生端即可查看。</li>
+        </ul>
+      </section>
+    </aside>
+
+    <main>
+      <section class="view" id="studentView">
+        <div class="topbar">
+          <div class="title">
+            <h2>工讀生意願登記</h2>
+            <p>請填寫本學期可固定排班的時段。送出後仍可用同一個姓名更新資料，正式班表以中心公布版本為準。</p>
+          </div>
+          <span class="badge" id="studentPublishBadge">尚未公布</span>
+        </div>
+
+        <div class="grid">
+          <section class="panel">
+            <div class="panel-head">
+              <h3>我的可排時段</h3>
+              <span class="note">可複選</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-grid">
+                <label>
+                  姓名
+                  <input id="nameInput" autocomplete="off" placeholder="例如：王小安">
+                </label>
+                <label>
+                  每週最多平日班數
+                  <input id="maxInput" type="number" min="1" max="10" value="2">
+                </label>
+                <label class="wide">
+                  可排時段
+                  <div class="slot-picker" id="slotPicker"></div>
+                </label>
+                <button class="btn primary wide" id="submitStudentBtn" type="button">送出 / 更新意願</button>
+              </div>
+              <div class="alerts" id="studentMessage"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h3>我的登記紀錄</h3>
+              <span class="note" id="studentCount">0 人已登記</span>
+            </div>
+            <div class="panel-body">
+              <div class="student-list" id="mySubmission"></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h3>公布班表</h3>
+            <div class="tabs" aria-label="工讀生班表切換">
+              <button class="tab active" id="studentWeeklyTab" type="button">每週固定班</button>
+              <button class="tab" id="studentSaturdayTab" type="button">週六輪值</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="studentUnpublished" class="alert">中心尚未公布最終班表，公布後會在這裡顯示。</div>
+            <div id="studentWeeklyView" class="schedule-wrap hidden"></div>
+            <div id="studentSaturdayView" class="schedule-wrap hidden"></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="view hidden" id="adminLoginView">
+        <div class="topbar">
+          <div class="title">
+            <h2>中心管理登入</h2>
+            <p>請輸入管理密碼後進入中心管理作業。</p>
+          </div>
+        </div>
+
+        <section class="panel login-card">
+          <div class="panel-head">
+            <h3>管理密碼</h3>
+          </div>
+          <div class="panel-body">
+            <div class="form-grid">
+              <label class="wide">
+                密碼
+                <input id="adminPasswordInput" type="password" autocomplete="current-password" placeholder="請輸入密碼">
+              </label>
+              <button class="btn primary wide" id="adminLoginBtn" type="button">進入管理頁面</button>
+            </div>
+            <div class="alerts" id="adminLoginMessage"></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="view hidden" id="adminView">
+        <div class="topbar">
+          <div class="title">
+            <h2>中心管理作業</h2>
+            <p>管理端可查看所有意願、調整每班需求、產生固定班表，確認無誤後再公布給工讀生查看。</p>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="generateBtn" type="button">產生班表</button>
+            <button class="btn" id="publishBtn" type="button">公布班表</button>
+            <button class="btn" id="exportBtn" type="button">下載 CSV</button>
+            <button class="btn warning" id="clearBtn" type="button">清空資料</button>
+            <button class="btn" id="adminLogoutBtn" type="button">登出管理</button>
+            <button class="btn warning" id="resetBtn" type="button">產生範例</button>
+          </div>
+        </div>
+
+        <div class="grid">
+          <section class="panel">
+            <div class="panel-head">
+              <h3>意願名單</h3>
+              <span class="note" id="adminStudentCount">0 人</span>
+            </div>
+            <div class="panel-body">
+              <div class="student-list" id="studentList"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h3>每班目標人數</h3>
+              <span class="note">這裡是預計每個固定班要安排幾人，不是目前缺額</span>
+            </div>
+            <div class="panel-body">
+              <div class="requirements" id="requirements"></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h3>排班結果</h3>
+            <div class="tabs" aria-label="管理端班表切換">
+              <button class="tab active" id="weeklyTab" type="button">每週固定班</button>
+              <button class="tab" id="saturdayTab" type="button">週六輪值</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="status" id="status"></div>
+            <div id="weeklyView" class="schedule-wrap"></div>
+            <div id="saturdayView" class="schedule-wrap hidden"></div>
+            <div class="alerts" id="alerts"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const weekdays = ["週一", "週二", "週三", "週四", "週五"];
+    const periods = [
+      { id: "am", label: "上午班", time: "10:00 - 13:00" },
+      { id: "pm", label: "下午班", time: "13:00 - 17:00" }
+    ];
+    const slots = weekdays.flatMap(day => periods.map(period => ({
+      id: `${day}-${period.id}`,
+      day,
+      period: period.id,
+      label: `${day}${period.label}`,
+      time: period.time
+    })));
+    const saturdaySlot = {
+      id: "週六-special",
+      day: "週六",
+      period: "special",
+      label: "週六輪值班",
+      time: "13:00 - 17:00"
+    };
+    const preferenceSlots = [...slots, saturdaySlot];
+
+    const defaultStudents = [
+      { name: "小安", max: 2, preferences: ["週一-am", "週三-am", "週五-pm", "週六-special"] },
+      { name: "庭宇", max: 2, preferences: ["週一-pm", "週二-pm", "週四-pm", "週六-special"] },
+      { name: "品妤", max: 2, preferences: ["週二-am", "週三-pm", "週五-am"] },
+      { name: "承恩", max: 2, preferences: ["週一-am", "週四-am", "週五-pm", "週六-special"] },
+      { name: "宜蓁", max: 2, preferences: ["週二-pm", "週三-am", "週四-pm"] },
+      { name: "柏翰", max: 2, preferences: ["週一-pm", "週三-pm", "週五-am", "週六-special"] },
+      { name: "心柔", max: 2, preferences: ["週二-am", "週四-am", "週五-pm"] },
+      { name: "哲維", max: 2, preferences: ["週一-am", "週三-pm", "週四-am", "週六-special"] }
+    ];
+    const defaultRequirements = Object.fromEntries(slots.map(slot => [slot.id, 1]));
+
+    let students = readStore("centerSchedulerStudents", defaultStudents);
+    let requirements = readStore("centerSchedulerRequirements", defaultRequirements);
+    let published = readStore("centerSchedulerPublished", false);
+    let latestSchedule = null;
+    let studentScheduleTab = "weekly";
+    let adminScheduleTab = "weekly";
+    let adminUnlocked = false;
+    const adminPassword = "5210";
+
+    const $ = id => document.getElementById(id);
+
+    function readStore(key, fallback) {
+      try {
+        const saved = localStorage.getItem(key);
+        return saved ? JSON.parse(saved) : structuredClone(fallback);
+      } catch {
+        return structuredClone(fallback);
+      }
+    }
+
+    function saveStore() {
+      localStorage.setItem("centerSchedulerStudents", JSON.stringify(students));
+      localStorage.setItem("centerSchedulerRequirements", JSON.stringify(requirements));
+      localStorage.setItem("centerSchedulerPublished", JSON.stringify(published));
+    }
+
+    function renderSlotPicker() {
+      $("slotPicker").innerHTML = preferenceSlots.map(slot => `
+        <label class="slot-option">
+          <input type="checkbox" value="${slot.id}">
+          <span>${slot.label}<br><small>${slot.time}</small></span>
+        </label>
+      `).join("");
+    }
+
+    function renderRequirements() {
+      $("requirements").innerHTML = slots.map(slot => `
+        <div class="req-item">
+          <div>
+            <div class="req-name">${slot.label}</div>
+            <div class="req-time">${slot.time}｜目標安排人數</div>
+          </div>
+          <input type="number" min="0" max="6" value="${requirements[slot.id] ?? 0}" data-req="${slot.id}" aria-label="${slot.label}目標安排人數">
+        </div>
+      `).join("");
+
+      document.querySelectorAll("[data-req]").forEach(input => {
+        input.addEventListener("change", () => {
+          requirements[input.dataset.req] = Math.max(0, Number(input.value || 0));
+          published = false;
+          saveStore();
+          generateSchedule();
+        });
+      });
+    }
+
+    function renderStudents() {
+      $("studentCount").textContent = `${students.length} 人已登記`;
+      $("adminStudentCount").textContent = `${students.length} 人`;
+
+      if (!students.length) {
+        $("studentList").innerHTML = `<div class="note">尚未有任何意願登記。</div>`;
+      } else {
+        $("studentList").innerHTML = students.map(student => `
+          <div class="student-row">
+            <div>
+              <div class="student-name">
+                <span>${student.name}</span>
+                <span class="badge">最多 ${student.max} 班</span>
+              </div>
+              <div class="chips">
+                ${student.preferences.map(id => `<span class="chip">${slotLabel(id)}</span>`).join("")}
+              </div>
+            </div>
+            <div>
+              <button class="btn icon" type="button" title="載入到工讀生表單" data-edit="${student.name}">編</button>
+              <button class="btn icon" type="button" title="刪除" data-delete="${student.name}">×</button>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      document.querySelectorAll("[data-edit]").forEach(button => {
+        button.addEventListener("click", () => {
+          switchRole("student");
+          loadStudent(button.dataset.edit);
+        });
+      });
+      document.querySelectorAll("[data-delete]").forEach(button => {
+        button.addEventListener("click", () => {
+          students = students.filter(student => student.name !== button.dataset.delete);
+          published = false;
+          saveStore();
+          refreshAll();
+        });
+      });
+    }
+
+    function renderMySubmission() {
+      const name = $("nameInput").value.trim();
+      const student = students.find(item => item.name === name);
+      if (!name) {
+        $("mySubmission").innerHTML = `<div class="note">輸入姓名後，這裡會顯示你的登記紀錄。</div>`;
+        return;
+      }
+      if (!student) {
+        $("mySubmission").innerHTML = `<div class="alert">目前查不到「${name}」的登記資料，送出後會建立新紀錄。</div>`;
+        return;
+      }
+      $("mySubmission").innerHTML = `
+        <div class="student-row">
+          <div>
+            <div class="student-name">
+              <span>${student.name}</span>
+              <span class="badge">最多 ${student.max} 班</span>
+            </div>
+            <div class="chips">
+              ${student.preferences.map(id => `<span class="chip">${slotLabel(id)}</span>`).join("")}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function slotLabel(id) {
+      return preferenceSlots.find(slot => slot.id === id)?.label ?? id;
+    }
+
+    function submitStudent() {
+      const name = $("nameInput").value.trim();
+      const max = Math.max(1, Number($("maxInput").value || 1));
+      const preferences = [...document.querySelectorAll("#slotPicker input:checked")].map(input => input.value);
+      if (!name) {
+        showStudentMessage("請先輸入姓名。", false);
+        return;
+      }
+      if (!preferences.length) {
+        showStudentMessage("請至少選擇一個可排時段。", false);
+        return;
+      }
+
+      const next = { name, max, preferences };
+      const index = students.findIndex(student => student.name === name);
+      if (index >= 0) students[index] = next;
+      else students.push(next);
+
+      published = false;
+      saveStore();
+      generateSchedule();
+      renderStudents();
+      renderMySubmission();
+      renderPublishedState();
+      showStudentMessage("已送出意願。若中心已公布班表，資料更新後需由管理端重新公布。", true);
+    }
+
+    function showStudentMessage(text, ok) {
+      $("studentMessage").innerHTML = `<div class="alert ${ok ? "ok" : ""}">${text}</div>`;
+    }
+
+    function loadStudent(name) {
+      const student = students.find(item => item.name === name);
+      if (!student) return;
+      $("nameInput").value = student.name;
+      $("maxInput").value = student.max;
+      document.querySelectorAll("#slotPicker input").forEach(input => {
+        input.checked = student.preferences.includes(input.value);
+      });
+      renderMySubmission();
+      $("nameInput").focus();
+    }
+
+    function generateSchedule() {
+      const assignedCount = Object.fromEntries(students.map(student => [student.name, 0]));
+      const schedule = Object.fromEntries(slots.map(slot => [slot.id, []]));
+      const warnings = [];
+      const orderedSlots = [...slots].sort((a, b) => {
+        const candidatesA = students.filter(student => student.preferences.includes(a.id)).length;
+        const candidatesB = students.filter(student => student.preferences.includes(b.id)).length;
+        return candidatesA - candidatesB;
+      });
+
+      orderedSlots.forEach(slot => {
+        const needed = Math.max(0, Number(requirements[slot.id] || 0));
+        const candidates = students
+          .filter(student => student.preferences.includes(slot.id))
+          .sort((a, b) => {
+            const loadDiff = assignedCount[a.name] - assignedCount[b.name];
+            if (loadDiff !== 0) return loadDiff;
+            return a.preferences.length - b.preferences.length;
+          });
+
+        candidates.forEach(student => {
+          if (schedule[slot.id].length >= needed) return;
+          if (assignedCount[student.name] >= student.max) return;
+          schedule[slot.id].push(student.name);
+          assignedCount[student.name] += 1;
+        });
+
+        if (schedule[slot.id].length < needed) {
+          warnings.push(`${slot.label} 尚缺 ${needed - schedule[slot.id].length} 人，可提高候選人的每週班數或補登意願。`);
+        }
+      });
+
+      latestSchedule = { schedule, assignedCount, saturday: buildSaturdayRotation(), warnings };
+      renderSchedule();
+      renderPublishedState();
+    }
+
+    function buildSaturdayRotation() {
+      const preferred = students
+        .filter(student => student.preferences.includes(saturdaySlot.id))
+        .map(student => student.name);
+      const names = preferred.length ? preferred : students.map(student => student.name);
+      return {
+        source: preferred.length ? "週六意願者輪流" : "未登記週六意願，暫以全體輪流",
+        candidates: names,
+        weeks: Array.from({ length: 18 }, (_, index) => ({
+          week: index + 1,
+          people: names.length ? [names[index % names.length]] : []
+        }))
+      };
+    }
+
+    function renderSchedule() {
+      const { schedule, assignedCount, saturday, warnings } = latestSchedule;
+      const target = Object.values(requirements).reduce((sum, count) => sum + Number(count || 0), 0);
+      const filled = Object.values(schedule).reduce((sum, names) => sum + names.length, 0);
+      const average = students.length ? (filled / students.length).toFixed(1) : "0";
+      const saturdayCount = saturday.candidates.length;
+
+      $("status").innerHTML = `
+        <div class="metric"><strong>${filled}/${target}</strong><span>平日固定班已媒合</span></div>
+        <div class="metric"><strong>${students.length}</strong><span>登記工讀生</span></div>
+        <div class="metric"><strong>${average}</strong><span>平均每人平日班數</span></div>
+        <div class="metric"><strong>${saturdayCount}</strong><span>週六輪值候選人</span></div>
+      `;
+
+      const weeklyHtml = buildWeeklyTable(schedule, saturday);
+      const saturdayHtml = buildSaturdayTable(saturday);
+      $("weeklyView").innerHTML = weeklyHtml;
+      $("saturdayView").innerHTML = saturdayHtml;
+      $("studentWeeklyView").innerHTML = weeklyHtml;
+      $("studentSaturdayView").innerHTML = saturdayHtml;
+
+      const loadNotes = students
+        .map(student => `${student.name}：${assignedCount[student.name] || 0}/${student.max} 班`)
+        .join("、");
+      $("alerts").innerHTML = [
+        warnings.length ? "" : `<div class="alert ok">所有設定的每班目標人數都已媒合完成。</div>`,
+        `<div class="alert ok">週六輪值：${saturday.source}${saturday.candidates.length ? `，名單為 ${saturday.candidates.join("、")}。` : "。"}</div>`,
+        loadNotes ? `<div class="alert ok">平日班數分布：${loadNotes}</div>` : "",
+        ...warnings.map(text => `<div class="alert">${text}</div>`)
+      ].join("");
+    }
+
+    function buildWeeklyTable(schedule, saturday) {
+      return `
+        <table>
+          <thead>
+            <tr>
+              <th>時段</th>
+              ${weekdays.map(day => `<th>${day}</th>`).join("")}
+              <th>週六</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${periods.map(period => `
+              <tr>
+                <td><div class="slot-title">${period.label}</div><div class="note">${period.time}</div></td>
+                ${weekdays.map(day => renderSlotCell(schedule[`${day}-${period.id}`], requirements[`${day}-${period.id}`])).join("")}
+                ${period.id === "pm" ? renderSaturdaySummaryCell(saturday) : renderClosedCell()}
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function buildSaturdayTable(saturday) {
+      return `
+        <div class="alert ok">
+          ${saturday.source}${saturday.candidates.length ? `：${saturday.candidates.join("、")}` : ""}
+        </div>
+        <table>
+          <thead><tr><th>週次</th><th>日期</th><th>週六特別班 13:00 - 17:00</th></tr></thead>
+          <tbody>
+            ${saturday.weeks.map(item => `
+              <tr>
+                <td>第 ${item.week} 週</td>
+                <td class="note">可公布後補上日期</td>
+                <td>${item.people.length ? item.people.map(name => `<span class="person">${name}</span>`).join(" ") : `<span class="empty">尚無人員</span>`}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderSlotCell(names, needed) {
+      const shortage = Math.max(0, Number(needed || 0) - names.length);
+      return `
+        <td>
+          <div class="note">目標 ${needed || 0} 人</div>
+          <div class="names">
+            ${names.map(name => `<span class="person">${name}</span>`).join("")}
+            ${shortage ? `<span class="empty">缺 ${shortage} 人</span>` : ""}
+          </div>
+        </td>
+      `;
+    }
+
+    function renderSaturdaySummaryCell(saturday) {
+      const previewWeeks = saturday.weeks.slice(0, 4);
+      return `
+        <td>
+          <div class="slot-title">週六輪值班</div>
+          <div class="note">13:00 - 17:00｜${saturday.source}</div>
+          <div class="chips">
+            ${saturday.candidates.length ? saturday.candidates.map(name => `<span class="chip">${name}</span>`).join("") : `<span class="empty">尚無候選人</span>`}
+          </div>
+          <div class="names">
+            ${previewWeeks.map(item => `<span class="person">第 ${item.week} 週：${item.people.join("、") || "尚無人員"}</span>`).join("")}
+          </div>
+          <div class="note">完整 18 週請看「週六輪值」分頁</div>
+        </td>
+      `;
+    }
+
+    function renderClosedCell() {
+      return `
+        <td>
+          <div class="note">週六上午不排班</div>
+        </td>
+      `;
+    }
+
+    function renderPublishedState() {
+      $("studentPublishBadge").textContent = published ? "已公布" : "尚未公布";
+      $("studentPublishBadge").classList.toggle("published", published);
+      $("publishBtn").textContent = published ? "取消公布" : "公布班表";
+      $("studentUnpublished").classList.toggle("hidden", published);
+      $("studentWeeklyView").classList.toggle("hidden", !published || studentScheduleTab !== "weekly");
+      $("studentSaturdayView").classList.toggle("hidden", !published || studentScheduleTab !== "saturday");
+    }
+
+    function exportCsv() {
+      if (!latestSchedule) generateSchedule();
+      const lines = [["類型", "週次/星期", "時段", "人員"]];
+      periods.forEach(period => {
+        weekdays.forEach(day => {
+          const id = `${day}-${period.id}`;
+          lines.push(["每週固定班", day, `${period.label} ${period.time}`, latestSchedule.schedule[id].join("、")]);
+        });
+      });
+      latestSchedule.saturday.weeks.forEach(item => {
+        lines.push(["週六輪值", `第 ${item.week} 週`, "13:00 - 17:00", item.people.join("、")]);
+      });
+      const csv = lines.map(row => row.map(cell => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
+      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "中心固定班表.csv";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function switchRole(role) {
+      const isStudent = role === "student";
+      $("studentView").classList.toggle("hidden", !isStudent);
+      $("adminLoginView").classList.toggle("hidden", isStudent || adminUnlocked);
+      $("adminView").classList.toggle("hidden", isStudent || !adminUnlocked);
+      $("studentRoleBtn").classList.toggle("active", isStudent);
+      $("adminRoleBtn").classList.toggle("active", !isStudent);
+      if (!isStudent && !adminUnlocked) {
+        $("adminPasswordInput").focus();
+      }
+    }
+
+    function loginAdmin() {
+      if ($("adminPasswordInput").value !== adminPassword) {
+        $("adminLoginMessage").innerHTML = `<div class="alert">密碼不正確，請重新輸入。</div>`;
+        $("adminPasswordInput").select();
+        return;
+      }
+      adminUnlocked = true;
+      $("adminPasswordInput").value = "";
+      $("adminLoginMessage").innerHTML = "";
+      switchRole("admin");
+    }
+
+    function logoutAdmin() {
+      adminUnlocked = false;
+      switchRole("student");
+    }
+
+    function switchScheduleTab(scope, target) {
+      const isWeekly = target === "weekly";
+      if (scope === "admin") {
+        adminScheduleTab = target;
+        $("weeklyTab").classList.toggle("active", isWeekly);
+        $("saturdayTab").classList.toggle("active", !isWeekly);
+        $("weeklyView").classList.toggle("hidden", !isWeekly);
+        $("saturdayView").classList.toggle("hidden", isWeekly);
+        return;
+      }
+      studentScheduleTab = target;
+      $("studentWeeklyTab").classList.toggle("active", isWeekly);
+      $("studentSaturdayTab").classList.toggle("active", !isWeekly);
+      renderPublishedState();
+    }
+
+    function refreshAll() {
+      renderRequirements();
+      renderStudents();
+      renderMySubmission();
+      generateSchedule();
+    }
+
+    $("studentRoleBtn").addEventListener("click", () => switchRole("student"));
+    $("adminRoleBtn").addEventListener("click", () => switchRole("admin"));
+    $("adminLoginBtn").addEventListener("click", loginAdmin);
+    $("adminPasswordInput").addEventListener("keydown", event => {
+      if (event.key === "Enter") loginAdmin();
+    });
+    $("adminLogoutBtn").addEventListener("click", logoutAdmin);
+    $("submitStudentBtn").addEventListener("click", submitStudent);
+    $("nameInput").addEventListener("input", renderMySubmission);
+    $("generateBtn").addEventListener("click", () => {
+      published = false;
+      saveStore();
+      generateSchedule();
+    });
+    $("publishBtn").addEventListener("click", () => {
+      published = !published;
+      saveStore();
+      renderPublishedState();
+    });
+    $("exportBtn").addEventListener("click", exportCsv);
+    $("weeklyTab").addEventListener("click", () => switchScheduleTab("admin", "weekly"));
+    $("saturdayTab").addEventListener("click", () => switchScheduleTab("admin", "saturday"));
+    $("studentWeeklyTab").addEventListener("click", () => switchScheduleTab("student", "weekly"));
+    $("studentSaturdayTab").addEventListener("click", () => switchScheduleTab("student", "saturday"));
+    $("clearBtn").addEventListener("click", () => {
+      if (!confirm("要清空所有工讀生登記資料嗎？每班目標人數會保留。")) return;
+      students = [];
+      published = false;
+      saveStore();
+      $("nameInput").value = "";
+      $("maxInput").value = 2;
+      document.querySelectorAll("#slotPicker input").forEach(input => input.checked = false);
+      refreshAll();
+    });
+    $("resetBtn").addEventListener("click", () => {
+      if (!confirm("要用範例資料取代目前資料嗎？")) return;
+      students = structuredClone(defaultStudents);
+      requirements = structuredClone(defaultRequirements);
+      published = false;
+      saveStore();
+      refreshAll();
+    });
+
+    renderSlotPicker();
+    refreshAll();
+  </script>
+</body>
+</html>
